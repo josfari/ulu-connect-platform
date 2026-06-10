@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Users, FolderKanban, Sparkles, Banknote } from "lucide-react";
+import { SiteLayout } from "@/components/site/SiteLayout";
 import heroImage from "@/assets/hero-community.jpg";
 import starlinkImage from "@/assets/project-starlink.jpg";
 import paSystemImage from "@/assets/project-pa-system.jpg";
@@ -56,6 +57,7 @@ const featuredProjects = [
 
 function HomePage() {
   return (
+    <SiteLayout>
     <main>
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-hero text-primary-foreground">
@@ -79,13 +81,13 @@ function HomePage() {
           </p>
           <div className="mt-10 flex flex-wrap gap-4">
             <Link
-              to="/"
+              to="/contact"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-cta px-7 py-3 font-semibold text-accent-foreground shadow-glow transition-transform hover:scale-105"
             >
               Join Us <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/"
+              to="/projects"
               className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/40 px-7 py-3 font-semibold transition-colors hover:bg-primary-foreground/10"
             >
               View Projects
@@ -136,12 +138,13 @@ function HomePage() {
           Join a community that saves together, builds together, and grows together.
         </p>
         <Link
-          to="/"
+          to="/contact"
           className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 font-semibold text-primary-foreground shadow-glow transition-transform hover:scale-105"
         >
           Become a Member <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
     </main>
+    </SiteLayout>
   );
 }

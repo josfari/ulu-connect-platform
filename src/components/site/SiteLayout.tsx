@@ -95,9 +95,16 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               </Link>
             ))}
             <Link
+              to="/join"
+              onClick={() => setOpen(false)}
+              className="mt-4 block rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-accent-foreground"
+            >
+              Join Us
+            </Link>
+            <Link
               to={signedIn ? "/admin" : "/auth"}
               onClick={() => setOpen(false)}
-              className="mt-4 block rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground"
+              className="mt-2 block rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground"
             >
               {signedIn ? "Dashboard" : "Login"}
             </Link>

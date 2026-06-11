@@ -48,17 +48,23 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                 {l.label}
               </Link>
             ))}
+            <Link
+              to="/join"
+              className="ml-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
+            >
+              Join Us
+            </Link>
             {signedIn ? (
               <Link
                 to="/admin"
-                className="ml-2 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition-opacity hover:opacity-90"
+                className="ml-1 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition-opacity hover:opacity-90"
               >
                 <LayoutDashboard className="h-4 w-4" /> Dashboard
               </Link>
             ) : (
               <Link
                 to="/auth"
-                className="ml-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                className="ml-1 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 Login
               </Link>
@@ -89,9 +95,16 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               </Link>
             ))}
             <Link
+              to="/join"
+              onClick={() => setOpen(false)}
+              className="mt-4 block rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-accent-foreground"
+            >
+              Join Us
+            </Link>
+            <Link
               to={signedIn ? "/admin" : "/auth"}
               onClick={() => setOpen(false)}
-              className="mt-4 block rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground"
+              className="mt-2 block rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground"
             >
               {signedIn ? "Dashboard" : "Login"}
             </Link>

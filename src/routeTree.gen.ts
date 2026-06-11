@@ -12,11 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as MediaRouteImport } from './routes/media'
+import { Route as JoinRouteImport } from './routes/join'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JoinPaymentRouteImport } from './routes/join.payment'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
@@ -43,6 +45,11 @@ const MediaRoute = MediaRouteImport.update({
   path: '/media',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
@@ -66,6 +73,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const JoinPaymentRoute = JoinPaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => JoinRoute,
 } as any)
 const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   id: '/admin',
@@ -128,10 +140,12 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/join': typeof JoinRouteWithChildren
   '/media': typeof MediaRoute
   '/members': typeof MembersRoute
   '/projects': typeof ProjectsRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/join/payment': typeof JoinPaymentRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
@@ -147,9 +161,11 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/join': typeof JoinRouteWithChildren
   '/media': typeof MediaRoute
   '/members': typeof MembersRoute
   '/projects': typeof ProjectsRoute
+  '/join/payment': typeof JoinPaymentRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
@@ -167,10 +183,12 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/join': typeof JoinRouteWithChildren
   '/media': typeof MediaRoute
   '/members': typeof MembersRoute
   '/projects': typeof ProjectsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/join/payment': typeof JoinPaymentRoute
   '/_authenticated/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/_authenticated/admin/media': typeof AuthenticatedAdminMediaRoute
   '/_authenticated/admin/members': typeof AuthenticatedAdminMembersRoute
@@ -188,10 +206,12 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/contact'
+    | '/join'
     | '/media'
     | '/members'
     | '/projects'
     | '/admin'
+    | '/join/payment'
     | '/admin/finance'
     | '/admin/media'
     | '/admin/members'
@@ -207,9 +227,11 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/contact'
+    | '/join'
     | '/media'
     | '/members'
     | '/projects'
+    | '/join/payment'
     | '/admin/finance'
     | '/admin/media'
     | '/admin/members'
@@ -226,10 +248,12 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/contact'
+    | '/join'
     | '/media'
     | '/members'
     | '/projects'
     | '/_authenticated/admin'
+    | '/join/payment'
     | '/_authenticated/admin/finance'
     | '/_authenticated/admin/media'
     | '/_authenticated/admin/members'
@@ -247,6 +271,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
+  JoinRoute: typeof JoinRouteWithChildren
   MediaRoute: typeof MediaRoute
   MembersRoute: typeof MembersRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -273,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/media'
       preLoaderRoute: typeof MediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -309,6 +341,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/join/payment': {
+      id: '/join/payment'
+      path: '/payment'
+      fullPath: '/join/payment'
+      preLoaderRoute: typeof JoinPaymentRouteImport
+      parentRoute: typeof JoinRoute
     }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
@@ -424,12 +463,23 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface JoinRouteChildren {
+  JoinPaymentRoute: typeof JoinPaymentRoute
+}
+
+const JoinRouteChildren: JoinRouteChildren = {
+  JoinPaymentRoute: JoinPaymentRoute,
+}
+
+const JoinRouteWithChildren = JoinRoute._addFileChildren(JoinRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
+  JoinRoute: JoinRouteWithChildren,
   MediaRoute: MediaRoute,
   MembersRoute: MembersRoute,
   ProjectsRoute: ProjectsRoute,
@@ -437,13 +487,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

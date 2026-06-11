@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as MediaRouteImport } from './routes/media'
+import { Route as JoinRouteImport } from './routes/join'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
@@ -41,6 +42,11 @@ const MembersRoute = MembersRouteImport.update({
 const MediaRoute = MediaRouteImport.update({
   id: '/media',
   path: '/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/join': typeof JoinRoute
   '/media': typeof MediaRoute
   '/members': typeof MembersRoute
   '/projects': typeof ProjectsRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/join': typeof JoinRoute
   '/media': typeof MediaRoute
   '/members': typeof MembersRoute
   '/projects': typeof ProjectsRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/join': typeof JoinRoute
   '/media': typeof MediaRoute
   '/members': typeof MembersRoute
   '/projects': typeof ProjectsRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/contact'
+    | '/join'
     | '/media'
     | '/members'
     | '/projects'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/contact'
+    | '/join'
     | '/media'
     | '/members'
     | '/projects'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/contact'
+    | '/join'
     | '/media'
     | '/members'
     | '/projects'
@@ -247,6 +259,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
+  JoinRoute: typeof JoinRoute
   MediaRoute: typeof MediaRoute
   MembersRoute: typeof MembersRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -273,6 +286,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/media'
       preLoaderRoute: typeof MediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -430,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
+  JoinRoute: JoinRoute,
   MediaRoute: MediaRoute,
   MembersRoute: MembersRoute,
   ProjectsRoute: ProjectsRoute,

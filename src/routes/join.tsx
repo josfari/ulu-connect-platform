@@ -349,7 +349,7 @@ function UploadBox({
 }: {
   label: string;
   value: string;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
 }) {

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          meta: Json
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          meta?: Json
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          meta?: Json
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -183,51 +216,155 @@ export type Database = {
           },
         ]
       }
+      member_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          member_id: string
+          mpesa_code: string
+          note: string | null
+          paid_on: string
+          payer_phone: string
+          verified: boolean
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          member_id: string
+          mpesa_code: string
+          note?: string | null
+          paid_on?: string
+          payer_phone: string
+          verified?: boolean
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          member_id?: string
+          mpesa_code?: string
+          note?: string | null
+          paid_on?: string
+          payer_phone?: string
+          verified?: boolean
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_payments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           bio: string | null
+          county: string | null
           created_at: string
           date_joined: string
+          date_of_birth: string | null
           email: string | null
+          emergency_contact: string | null
           full_name: string
+          gender: string | null
           id: string
+          id_back_path: string | null
+          id_front_path: string | null
           membership_category: string
+          membership_number: string | null
+          national_id: string | null
+          next_of_kin_name: string | null
+          next_of_kin_phone: string | null
+          occupation: string | null
           phone: string | null
           photo_url: string | null
+          physical_location: string | null
+          reason_for_joining: string | null
           role: string | null
           show_contact: boolean
           status: Database["public"]["Enums"]["member_status"]
+          sub_county: string | null
           updated_at: string
+          user_id: string | null
+          ward: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           bio?: string | null
+          county?: string | null
           created_at?: string
           date_joined?: string
+          date_of_birth?: string | null
           email?: string | null
+          emergency_contact?: string | null
           full_name: string
+          gender?: string | null
           id?: string
+          id_back_path?: string | null
+          id_front_path?: string | null
           membership_category?: string
+          membership_number?: string | null
+          national_id?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          occupation?: string | null
           phone?: string | null
           photo_url?: string | null
+          physical_location?: string | null
+          reason_for_joining?: string | null
           role?: string | null
           show_contact?: boolean
           status?: Database["public"]["Enums"]["member_status"]
+          sub_county?: string | null
           updated_at?: string
+          user_id?: string | null
+          ward?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           bio?: string | null
+          county?: string | null
           created_at?: string
           date_joined?: string
+          date_of_birth?: string | null
           email?: string | null
+          emergency_contact?: string | null
           full_name?: string
+          gender?: string | null
           id?: string
+          id_back_path?: string | null
+          id_front_path?: string | null
           membership_category?: string
+          membership_number?: string | null
+          national_id?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          occupation?: string | null
           phone?: string | null
           photo_url?: string | null
+          physical_location?: string | null
+          reason_for_joining?: string | null
           role?: string | null
           show_contact?: boolean
           status?: Database["public"]["Enums"]["member_status"]
+          sub_county?: string | null
           updated_at?: string
+          user_id?: string | null
+          ward?: string | null
         }
         Relationships: []
       }
@@ -448,6 +585,63 @@ export type Database = {
           },
         ]
       }
+      site_settings: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          footer_text: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
+          homepage_stats: Json
+          id: string
+          location: string | null
+          logo_url: string | null
+          mpesa_account: string | null
+          mpesa_paybill: string | null
+          mpesa_till: string | null
+          org_name: string
+          registration_fee: number
+          socials: Json
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          footer_text?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          homepage_stats?: Json
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          mpesa_account?: string | null
+          mpesa_paybill?: string | null
+          mpesa_till?: string | null
+          org_name?: string
+          registration_fee?: number
+          socials?: Json
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          footer_text?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          homepage_stats?: Json
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          mpesa_account?: string | null
+          mpesa_paybill?: string | null
+          mpesa_till?: string | null
+          org_name?: string
+          registration_fee?: number
+          socials?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staff: {
         Row: {
           bio: string | null
@@ -540,6 +734,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_membership_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -224,8 +224,41 @@ export const getPublicSiteSettings = createServerFn({ method: "GET" }).handler(a
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("site_settings")
-    .select("org_name, contact_phone, contact_email, location, mpesa_paybill, mpesa_account, mpesa_till, registration_fee, hero_title, hero_subtitle")
+    .select("org_name, contact_phone, contact_email, location, mpesa_paybill, mpesa_account, mpesa_till, registration_fee, hero_title, hero_subtitle, socials, footer_text")
     .eq("id", "main")
     .maybeSingle();
   return { settings: data ?? null };
+});
+
+export const getImpactStats = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [members, projects, activeProjects, contributions, loans, youth] = await Promise.all([
+    supabaseAdmin.from("members").select("id", { count: "exact", head: true }).in("status", ["active", "executive", "volunteer", "approved"]),
+    supabaseAdmin.from("projects").select("id", { count: "exact", head: true }),
+    supabaseAdmin.from("projects").select("id", { count: "exact", head: true }).eq("status", "active"),
+    supabaseAdmin.from("contributions").select("amount"),
+    supabaseAdmin.from("loans").select("principal"),
+    supabaseAdmin.from("members").select("id", { count: "exact", head: true }).eq("membership_category", "youth"),
+  ]);
+  const totalSaved = (contributions.data ?? []).reduce((s, c) => s + Number(c.amount), 0);
+  const loansIssued = (loans.data ?? []).reduce((s, l) => s + Number(l.principal), 0);
+  return {
+    members: members.count ?? 0,
+    projects: projects.count ?? 0,
+    activeProjects: activeProjects.count ?? 0,
+    youth: youth.count ?? 0,
+    totalSaved,
+    loansIssued,
+  };
+});
+
+export const getSuccessStories = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("posts")
+    .select("id, title, slug, excerpt, featured_image, published_at")
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(3);
+  return { stories: data ?? [] };
 });

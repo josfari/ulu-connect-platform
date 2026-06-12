@@ -136,7 +136,7 @@ function HomePage() {
             <div className="grid gap-6 md:grid-cols-3">
               {stories.data.stories.map((st) => (
                 <article key={st.id} className="overflow-hidden rounded-2xl bg-card shadow-card">
-                  {st.featured_image && <img src={st.featured_image} alt={st.title} className="h-44 w-full object-cover" />}
+                  {st.cover_image_url && <img src={st.cover_image_url} alt={st.title} className="h-44 w-full object-cover" />}
                   <div className="p-6">
                     <h3 className="text-lg font-bold">{st.title}</h3>
                     <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{st.excerpt}</p>

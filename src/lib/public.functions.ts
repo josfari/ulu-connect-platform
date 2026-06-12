@@ -256,7 +256,7 @@ export const getSuccessStories = createServerFn({ method: "GET" }).handler(async
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("posts")
-    .select("id, title, slug, excerpt, featured_image, published_at")
+    .select("id, title, slug, excerpt, cover_image_url, published_at")
     .eq("status", "published")
     .order("published_at", { ascending: false })
     .limit(3);

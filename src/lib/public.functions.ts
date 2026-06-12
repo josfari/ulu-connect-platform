@@ -235,7 +235,7 @@ export const getImpactStats = createServerFn({ method: "GET" }).handler(async ()
   const [members, projects, activeProjects, contributions, loans, youth] = await Promise.all([
     supabaseAdmin.from("members").select("id", { count: "exact", head: true }).in("status", ["active", "executive", "volunteer", "approved"]),
     supabaseAdmin.from("projects").select("id", { count: "exact", head: true }),
-    supabaseAdmin.from("projects").select("id", { count: "exact", head: true }).eq("status", "active"),
+    supabaseAdmin.from("projects").select("id", { count: "exact", head: true }).eq("status", "ongoing"),
     supabaseAdmin.from("contributions").select("amount"),
     supabaseAdmin.from("loans").select("principal"),
     supabaseAdmin.from("members").select("id", { count: "exact", head: true }).eq("membership_category", "youth"),

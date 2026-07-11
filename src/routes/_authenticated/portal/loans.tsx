@@ -47,7 +47,7 @@ function MyLoans() {
             <Card key={ln.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-lg">KSh {Number(ln.principal).toLocaleString("en-KE")}</CardTitle>
-                <Badge variant={ln.status === "active" ? "default" : ln.status === "overdue" ? "destructive" : "secondary"} className="capitalize">{ln.status}</Badge>
+                <Badge variant={ln.status === "active" ? "default" : ln.status === "defaulted" ? "destructive" : "secondary"} className="capitalize">{ln.status}</Badge>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">

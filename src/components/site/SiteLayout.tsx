@@ -78,10 +78,10 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             </Link>
             {signedIn ? (
               <Link
-                to="/admin"
+                to="/portal"
                 className="ml-1 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition-opacity hover:opacity-90"
               >
-                <LayoutDashboard className="h-4 w-4" /> Dashboard
+                <LayoutDashboard className="h-4 w-4" /> My Portal
               </Link>
             ) : (
               <Link

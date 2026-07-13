@@ -61,3 +61,111 @@ export const removeUserRoles = createServerFn({ method: "POST" })
     if (error) return { ok: false, error: "Could not remove access." };
     return { ok: true, error: null };
   });
+
+// ---------- Members admin ----------
+
+async function assertStaff(supabase: { rpc: Function }, userId: string) {
+  const { data, error } = await supabase.rpc("is_staff", { _user_id: userId });
+  if (error || !data) throw new Error("Forbidden: staff access required");
+}
+
+export const listAdminMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: members, error } = await supabaseAdmin
+      .from("members")
+      .select("id, full_name, phone, email, national_id, membership_category, status, photo_url, membership_number, date_joined, approved_at, created_at")
+      .order("created_at", { ascending: false });
+    if (error) return { members: [], error: "Could not load members" };
+
+    const memberIds = (members ?? []).map((m) => m.id);
+    const paymentsRes = memberIds.length
+      ? await supabaseAdmin
+          .from("member_payments")
+          .select("member_id, amount, mpesa_code, paid_on, verified")
+          .in("member_id", memberIds)
+      : { data: [], error: null };
+
+    const totals = new Map<string, number>();
+    for (const p of paymentsRes.data ?? []) {
+      totals.set(p.member_id, (totals.get(p.member_id) ?? 0) + Number(p.amount ?? 0));
+    }
+
+    // Sign photo URLs (private bucket paths become viewable URLs)
+    const enriched = await Promise.all(
+      (members ?? []).map(async (m) => {
+        let photo_display_url: string | null = null;
+        if (m.photo_url) {
+          if (m.photo_url.startsWith("http")) {
+            photo_display_url = m.photo_url;
+          } else {
+            // Try public URL first (images bucket), fall back to signed URL (media bucket)
+            const pub = supabaseAdmin.storage.from("images").getPublicUrl(m.photo_url);
+            if (pub.data?.publicUrl && m.photo_url.startsWith("members/")) {
+              // Attempt signed URL from media bucket as legacy
+              const signed = await supabaseAdmin.storage
+                .from("media")
+                .createSignedUrl(m.photo_url, 3600);
+              photo_display_url = signed.data?.signedUrl ?? pub.data.publicUrl;
+            } else {
+              photo_display_url = pub.data?.publicUrl ?? null;
+            }
+          }
+        }
+        return {
+          ...m,
+          amount_paid: totals.get(m.id) ?? 0,
+          photo_display_url,
+        };
+      })
+    );
+
+    return { members: enriched, error: null as string | null };
+  });
+
+export const approveMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ memberId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    // Uses the SECURITY DEFINER RPC which checks auth.uid() is admin and amount_paid >= 300
+    const { data: result, error } = await context.supabase.rpc("approve_member", {
+      _member_id: data.memberId,
+    });
+    if (error) {
+      return { ok: false as const, error: error.message, membership_number: null };
+    }
+    const row = Array.isArray(result) ? result[0] : result;
+    return { ok: true as const, error: null, membership_number: row?.membership_number ?? null };
+  });
+
+export const rejectMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ memberId: z.string().uuid(), reason: z.string().max(500).optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("members")
+      .update({ status: "inactive" })
+      .eq("id", data.memberId);
+    if (error) return { ok: false, error: "Could not reject member." };
+    return { ok: true, error: null };
+  });
+
+export const getMemberPayments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ memberId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: payments, error } = await supabaseAdmin
+      .from("member_payments")
+      .select("id, amount, mpesa_code, payer_phone, paid_on, verified, created_at")
+      .eq("member_id", data.memberId)
+      .order("paid_on", { ascending: false });
+    if (error) return { payments: [], error: "Could not load payments" };
+    return { payments: payments ?? [], error: null as string | null };
+  });
+

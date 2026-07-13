@@ -13,8 +13,17 @@ export const getPublicMembers = createServerFn({ method: "GET" }).handler(async 
     console.error("getPublicMembers", error);
     return { members: [], error: "Could not load members" as string | null };
   }
-  return { members: data ?? [], error: null as string | null };
+  const withUrls = (data ?? []).map((m) => {
+    let photo_url = m.photo_url;
+    if (photo_url && !photo_url.startsWith("http")) {
+      const { data: pub } = supabaseAdmin.storage.from("images").getPublicUrl(photo_url);
+      photo_url = pub?.publicUrl ?? photo_url;
+    }
+    return { ...m, photo_url };
+  });
+  return { members: withUrls, error: null as string | null };
 });
+
 
 const contactSchema = z.object({
   name: z.string().min(2).max(200),

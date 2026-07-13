@@ -13,8 +13,17 @@ export const getPublicMembers = createServerFn({ method: "GET" }).handler(async 
     console.error("getPublicMembers", error);
     return { members: [], error: "Could not load members" as string | null };
   }
-  return { members: data ?? [], error: null as string | null };
+  const withUrls = (data ?? []).map((m) => {
+    let photo_url = m.photo_url;
+    if (photo_url && !photo_url.startsWith("http")) {
+      const { data: pub } = supabaseAdmin.storage.from("images").getPublicUrl(photo_url);
+      photo_url = pub?.publicUrl ?? photo_url;
+    }
+    return { ...m, photo_url };
+  });
+  return { members: withUrls, error: null as string | null };
 });
+
 
 const contactSchema = z.object({
   name: z.string().min(2).max(200),
@@ -92,13 +101,14 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; contentType: string; 
 
 async function uploadDataUrl(
   storage: { from: (bucket: string) => { upload: (path: string, body: Buffer, opts: { contentType: string; upsert?: boolean }) => Promise<{ error: { message: string } | null }> } },
+  bucket: string,
   folder: string,
   dataUrl: string,
 ): Promise<string | null> {
   const decoded = decodeDataUrl(dataUrl);
   if (!decoded) return null;
   const path = `${folder}/${crypto.randomUUID()}.${decoded.ext}`;
-  const { error } = await storage.from("media").upload(path, decoded.buffer, {
+  const { error } = await storage.from(bucket).upload(path, decoded.buffer, {
     contentType: decoded.contentType,
     upsert: false,
   });
@@ -124,10 +134,13 @@ export const submitRegistration = createServerFn({ method: "POST" })
       return { ok: false as const, error: "A member with this ID or phone number is already registered.", memberId: null };
     }
 
-    const photoPath = await uploadDataUrl(supabaseAdmin.storage, "members/photos", data.passport_photo);
+    // Passport photo -> public "images" bucket (readable by everyone via RLS)
+    const photoPath = await uploadDataUrl(supabaseAdmin.storage, "images", "members/photos", data.passport_photo);
     if (!photoPath) return { ok: false as const, error: "Could not upload passport photo.", memberId: null };
-    const idFrontPath = data.id_front ? await uploadDataUrl(supabaseAdmin.storage, "members/ids", data.id_front) : null;
-    const idBackPath = data.id_back ? await uploadDataUrl(supabaseAdmin.storage, "members/ids", data.id_back) : null;
+    // ID documents -> private "media" bucket (staff-only read)
+    const idFrontPath = data.id_front ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_front) : null;
+    const idBackPath = data.id_back ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_back) : null;
+
 
     const { data: inserted, error } = await supabaseAdmin
       .from("members")

@@ -148,16 +148,8 @@ function AdminMembers() {
       a.href = dataUrl;
       a.download = `membership-card-${cardFor?.membership_number ?? cardFor?.id}.png`;
       a.click();
-    } catch (e) {
-      // Fallback: open HTML in new tab for print
-      try {
-        const html = await toHtml(cardRef.current);
-        const w = window.open("", "_blank");
-        w?.document.write(html);
-        w?.document.close();
-      } catch {
-        toast.error("Could not export card image.");
-      }
+    } catch {
+      toast.error("Could not export card image.");
     }
   };
 

@@ -734,6 +734,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_member: {
+        Args: { _member_id: string }
+        Returns: {
+          membership_number: string
+        }[]
+      }
       generate_membership_number: { Args: never; Returns: string }
       has_role: {
         Args: {

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
-import { toHtml, toPng } from "html-to-image";
+import { toPng } from "html-to-image";
 import {
   Loader2,
   Download,

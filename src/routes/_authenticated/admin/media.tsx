@@ -227,9 +227,31 @@ function AdminMedia() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="post-cover">Cover image URL (optional)</Label>
-                <Input id="post-cover" value={form.cover_image_url} onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })} />
+                <Label htmlFor="post-cover">Cover image</Label>
+                <input
+                  id="post-cover"
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const path = `posts/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+                    const up = await supabase.storage.from("images").upload(path, file, { contentType: file.type, upsert: false });
+                    if (up.error) {
+                      toast.error("Upload failed. Are you signed in as staff?");
+                      return;
+                    }
+                    const { data: pub } = supabase.storage.from("images").getPublicUrl(path);
+                    setForm({ ...form, cover_image_url: pub.publicUrl });
+                    toast.success("Cover image uploaded.");
+                  }}
+                />
+                {form.cover_image_url && (
+                  <img src={form.cover_image_url} alt="cover" className="mt-2 h-24 w-full rounded-md object-cover" />
+                )}
               </div>
+
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as PostRow["status"] })}>

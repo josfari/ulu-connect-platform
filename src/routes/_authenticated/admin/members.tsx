@@ -29,12 +29,16 @@ export const Route = createFileRoute("/_authenticated/admin/members")({
 
 type Member = Awaited<ReturnType<typeof listAdminMembers>>["members"][number];
 
-function statusColor(s: string): "default" | "secondary" | "outline" | "destructive" {
-  if (s === "active" || s === "executive") return "default";
-  if (s === "pending" || s === "pending_payment" || s === "payment_submitted") return "secondary";
-  if (s === "inactive") return "destructive";
-  return "outline";
+function statusBadgeClass(s: string): string {
+  if (["active", "executive", "volunteer"].includes(s))
+    return "bg-green-100 text-green-800 hover:bg-green-100 border-green-200";
+  if (["pending", "pending_payment", "payment_submitted"].includes(s))
+    return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200";
+  if (s === "inactive")
+    return "bg-red-100 text-red-800 hover:bg-red-100 border-red-200";
+  return "";
 }
+
 
 function downloadCsv(members: Member[]) {
   const header = "Full Name,Email,Phone,National ID,Membership ID,Category,Status,Amount Paid,Date Joined\n";

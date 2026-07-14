@@ -383,11 +383,15 @@ function AdminMembers() {
               />
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={printCard}>
+              <Printer className="mr-2 h-4 w-4" /> Print Card
+            </Button>
             <Button onClick={downloadCard}>
               <Download className="mr-2 h-4 w-4" /> Download Card (PNG)
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </div>

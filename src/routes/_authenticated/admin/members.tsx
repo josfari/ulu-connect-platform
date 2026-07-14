@@ -335,7 +335,7 @@ function AdminMembers() {
                   <div><span className="text-muted-foreground">Phone:</span> {detail.phone ?? "—"}</div>
                   <div><span className="text-muted-foreground">Email:</span> {detail.email ?? "—"}</div>
                   <div><span className="text-muted-foreground">Category:</span> {detail.membership_category}</div>
-                  <div><span className="text-muted-foreground">Status:</span> <Badge variant={statusColor(detail.status)} className="capitalize">{detail.status.replace(/_/g, " ")}</Badge></div>
+                  <div><span className="text-muted-foreground">Status:</span> <Badge variant="outline" className={`capitalize ${statusBadgeClass(detail.status)}`}>{detail.status.replace(/_/g, " ")}</Badge></div>
                   <div><span className="text-muted-foreground">Membership ID:</span> <span className="font-mono">{detail.membership_number ?? "—"}</span></div>
                   <div><span className="text-muted-foreground">Total paid:</span> Ksh {detail.amount_paid.toLocaleString()}</div>
                 </div>

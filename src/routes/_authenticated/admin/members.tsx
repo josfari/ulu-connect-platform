@@ -12,7 +12,9 @@ import {
   IdCard,
   Search,
   Users as UsersIcon,
+  Printer,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +31,16 @@ export const Route = createFileRoute("/_authenticated/admin/members")({
 
 type Member = Awaited<ReturnType<typeof listAdminMembers>>["members"][number];
 
-function statusColor(s: string): "default" | "secondary" | "outline" | "destructive" {
-  if (s === "active" || s === "executive") return "default";
-  if (s === "pending" || s === "pending_payment" || s === "payment_submitted") return "secondary";
-  if (s === "inactive") return "destructive";
-  return "outline";
+function statusBadgeClass(s: string): string {
+  if (["active", "executive", "volunteer"].includes(s))
+    return "bg-green-100 text-green-800 hover:bg-green-100 border-green-200";
+  if (["pending", "pending_payment", "payment_submitted"].includes(s))
+    return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200";
+  if (s === "inactive")
+    return "bg-red-100 text-red-800 hover:bg-red-100 border-red-200";
+  return "";
 }
+
 
 function downloadCsv(members: Member[]) {
   const header = "Full Name,Email,Phone,National ID,Membership ID,Category,Status,Amount Paid,Date Joined\n";
@@ -153,6 +159,23 @@ function AdminMembers() {
     }
   };
 
+  const printCard = async () => {
+    if (!cardRef.current) return;
+    try {
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+      const w = window.open("", "_blank", "width=800,height=600");
+      if (!w) {
+        toast.error("Pop-up blocked. Allow pop-ups to print.");
+        return;
+      }
+      w.document.write(`<html><head><title>Membership Card</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#fff;}img{max-width:100%;height:auto;}@media print{@page{size:auto;margin:12mm;}}</style></head><body><img src="${dataUrl}" onload="setTimeout(()=>{window.print();window.close();},200)" /></body></html>`);
+      w.document.close();
+    } catch {
+      toast.error("Could not prepare card for printing.");
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -218,7 +241,8 @@ function AdminMembers() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((m) => {
-                    const canApprove = m.amount_paid >= 300 && ["pending", "pending_payment", "payment_submitted"].includes(m.status);
+                    const isPending = ["pending", "pending_payment", "payment_submitted"].includes(m.status);
+                    const paid = m.amount_paid >= 300;
                     return (
                       <TableRow key={m.id}>
                         <TableCell>
@@ -241,12 +265,24 @@ function AdminMembers() {
                           <div className="text-xs text-muted-foreground">{m.email ?? ""}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusColor(m.status)} className="capitalize">
-                            {m.status.replace(/_/g, " ")}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline" className={`capitalize ${statusBadgeClass(m.status)}`}>
+                              {m.status.replace(/_/g, " ")}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                paid
+                                  ? "bg-green-100 text-green-800 hover:bg-green-100 border-green-200 w-fit"
+                                  : "bg-red-100 text-red-800 hover:bg-red-100 border-red-200 w-fit"
+                              }
+                            >
+                              {paid ? "Paid" : "Not Paid"}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <span className={m.amount_paid >= 300 ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                          <span className={paid ? "text-green-600 font-medium" : "text-muted-foreground"}>
                             Ksh {m.amount_paid.toLocaleString()}
                           </span>
                         </TableCell>
@@ -263,7 +299,7 @@ function AdminMembers() {
                                 <IdCard className="h-4 w-4" />
                               </Button>
                             )}
-                            {canApprove && (
+                            {isPending && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -271,12 +307,10 @@ function AdminMembers() {
                                 onClick={() => approveMut.mutate(m.id)}
                                 disabled={approveMut.isPending}
                                 aria-label="Approve"
+                                title={paid ? "Approve" : "Approve (payment not completed)"}
                               >
                                 <CheckCircle2 className="h-4 w-4" />
                               </Button>
-                            )}
-                            {["pending", "pending_payment", "payment_submitted"].includes(m.status) && m.amount_paid < 300 && (
-                              <span className="text-xs text-amber-600 self-center px-2">Payment not completed</span>
                             )}
                             {m.status !== "inactive" && (
                               <Button
@@ -293,6 +327,7 @@ function AdminMembers() {
                             )}
                           </div>
                         </TableCell>
+
                       </TableRow>
                     );
                   })}
@@ -319,7 +354,7 @@ function AdminMembers() {
                   <div><span className="text-muted-foreground">Phone:</span> {detail.phone ?? "—"}</div>
                   <div><span className="text-muted-foreground">Email:</span> {detail.email ?? "—"}</div>
                   <div><span className="text-muted-foreground">Category:</span> {detail.membership_category}</div>
-                  <div><span className="text-muted-foreground">Status:</span> <Badge variant={statusColor(detail.status)} className="capitalize">{detail.status.replace(/_/g, " ")}</Badge></div>
+                  <div><span className="text-muted-foreground">Status:</span> <Badge variant="outline" className={`capitalize ${statusBadgeClass(detail.status)}`}>{detail.status.replace(/_/g, " ")}</Badge></div>
                   <div><span className="text-muted-foreground">Membership ID:</span> <span className="font-mono">{detail.membership_number ?? "—"}</span></div>
                   <div><span className="text-muted-foreground">Total paid:</span> Ksh {detail.amount_paid.toLocaleString()}</div>
                 </div>
@@ -365,11 +400,15 @@ function AdminMembers() {
               />
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={printCard}>
+              <Printer className="mr-2 h-4 w-4" /> Print Card
+            </Button>
             <Button onClick={downloadCard}>
               <Download className="mr-2 h-4 w-4" /> Download Card (PNG)
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </div>

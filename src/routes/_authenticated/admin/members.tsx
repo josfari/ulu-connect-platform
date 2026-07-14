@@ -222,7 +222,8 @@ function AdminMembers() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((m) => {
-                    const canApprove = m.amount_paid >= 300 && ["pending", "pending_payment", "payment_submitted"].includes(m.status);
+                    const isPending = ["pending", "pending_payment", "payment_submitted"].includes(m.status);
+                    const paid = m.amount_paid >= 300;
                     return (
                       <TableRow key={m.id}>
                         <TableCell>
@@ -245,12 +246,24 @@ function AdminMembers() {
                           <div className="text-xs text-muted-foreground">{m.email ?? ""}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusColor(m.status)} className="capitalize">
-                            {m.status.replace(/_/g, " ")}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline" className={`capitalize ${statusBadgeClass(m.status)}`}>
+                              {m.status.replace(/_/g, " ")}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                paid
+                                  ? "bg-green-100 text-green-800 hover:bg-green-100 border-green-200 w-fit"
+                                  : "bg-red-100 text-red-800 hover:bg-red-100 border-red-200 w-fit"
+                              }
+                            >
+                              {paid ? "Paid" : "Not Paid"}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <span className={m.amount_paid >= 300 ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                          <span className={paid ? "text-green-600 font-medium" : "text-muted-foreground"}>
                             Ksh {m.amount_paid.toLocaleString()}
                           </span>
                         </TableCell>
@@ -267,7 +280,7 @@ function AdminMembers() {
                                 <IdCard className="h-4 w-4" />
                               </Button>
                             )}
-                            {canApprove && (
+                            {isPending && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -275,12 +288,10 @@ function AdminMembers() {
                                 onClick={() => approveMut.mutate(m.id)}
                                 disabled={approveMut.isPending}
                                 aria-label="Approve"
+                                title={paid ? "Approve" : "Approve (payment not completed)"}
                               >
                                 <CheckCircle2 className="h-4 w-4" />
                               </Button>
-                            )}
-                            {["pending", "pending_payment", "payment_submitted"].includes(m.status) && m.amount_paid < 300 && (
-                              <span className="text-xs text-amber-600 self-center px-2">Payment not completed</span>
                             )}
                             {m.status !== "inactive" && (
                               <Button
@@ -297,6 +308,7 @@ function AdminMembers() {
                             )}
                           </div>
                         </TableCell>
+
                       </TableRow>
                     );
                   })}

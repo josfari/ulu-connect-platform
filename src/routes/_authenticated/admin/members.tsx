@@ -159,6 +159,23 @@ function AdminMembers() {
     }
   };
 
+  const printCard = async () => {
+    if (!cardRef.current) return;
+    try {
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+      const w = window.open("", "_blank", "width=800,height=600");
+      if (!w) {
+        toast.error("Pop-up blocked. Allow pop-ups to print.");
+        return;
+      }
+      w.document.write(`<html><head><title>Membership Card</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#fff;}img{max-width:100%;height:auto;}@media print{@page{size:auto;margin:12mm;}}</style></head><body><img src="${dataUrl}" onload="setTimeout(()=>{window.print();window.close();},200)" /></body></html>`);
+      w.document.close();
+    } catch {
+      toast.error("Could not prepare card for printing.");
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">

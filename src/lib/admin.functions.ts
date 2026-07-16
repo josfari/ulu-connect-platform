@@ -93,7 +93,7 @@ export const listAdminMembers = createServerFn({ method: "GET" })
       totals.set(p.member_id, (totals.get(p.member_id) ?? 0) + Number(p.amount ?? 0));
     }
 
-    // Sign photo URLs (private bucket paths become viewable URLs)
+    // Sign photo URLs (private "images" bucket needs signed URLs to display)
     const enriched = await Promise.all(
       (members ?? []).map(async (m) => {
         let photo_display_url: string | null = null;
@@ -101,17 +101,12 @@ export const listAdminMembers = createServerFn({ method: "GET" })
           if (m.photo_url.startsWith("http")) {
             photo_display_url = m.photo_url;
           } else {
-            // Try public URL first (images bucket), fall back to signed URL (media bucket)
-            const pub = supabaseAdmin.storage.from("images").getPublicUrl(m.photo_url);
-            if (pub.data?.publicUrl && m.photo_url.startsWith("members/")) {
-              // Attempt signed URL from media bucket as legacy
-              const signed = await supabaseAdmin.storage
-                .from("media")
-                .createSignedUrl(m.photo_url, 3600);
-              photo_display_url = signed.data?.signedUrl ?? pub.data.publicUrl;
-            } else {
-              photo_display_url = pub.data?.publicUrl ?? null;
-            }
+            // New uploads live in the "images" bucket; legacy uploads in "media"
+            const bucket = m.photo_url.startsWith("members/") ? "media" : "images";
+            const signed = await supabaseAdmin.storage
+              .from(bucket)
+              .createSignedUrl(m.photo_url, 60 * 60);
+            photo_display_url = signed.data?.signedUrl ?? null;
           }
         }
         return {

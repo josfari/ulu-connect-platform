@@ -13,14 +13,16 @@ export const getPublicMembers = createServerFn({ method: "GET" }).handler(async 
     console.error("getPublicMembers", error);
     return { members: [], error: "Could not load members" as string | null };
   }
-  const withUrls = (data ?? []).map((m) => {
+  const withUrls = await Promise.all((data ?? []).map(async (m) => {
     let photo_url = m.photo_url;
     if (photo_url && !photo_url.startsWith("http")) {
-      const { data: pub } = supabaseAdmin.storage.from("images").getPublicUrl(photo_url);
-      photo_url = pub?.publicUrl ?? photo_url;
+      const { data: signed } = await supabaseAdmin.storage
+        .from("images")
+        .createSignedUrl(photo_url, 60 * 60 * 24);
+      photo_url = signed?.signedUrl ?? null;
     }
     return { ...m, photo_url };
-  });
+  }));
   return { members: withUrls, error: null as string | null };
 });
 
@@ -91,32 +93,45 @@ const registrationSchema = z.object({
   id_back: z.string().startsWith("data:image/").max(2_500_000).optional().or(z.literal("")),
 });
 
-function decodeDataUrl(dataUrl: string): { buffer: Buffer; contentType: string; ext: string } | null {
+function decodeDataUrl(dataUrl: string): { bytes: Uint8Array; contentType: string; ext: string } | null {
   const match = /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/.exec(dataUrl);
   if (!match) return null;
   const contentType = match[1];
   const ext = contentType.split("/")[1].replace("jpeg", "jpg");
-  return { buffer: Buffer.from(match[2], "base64"), contentType, ext };
+  const bin = Buffer.from(match[2], "base64");
+  const bytes = new Uint8Array(bin.byteLength);
+  bytes.set(bin);
+  return { bytes, contentType, ext };
 }
 
+type StorageLike = {
+  from: (bucket: string) => {
+    upload: (
+      path: string,
+      body: Uint8Array | Blob,
+      opts: { contentType: string; upsert?: boolean },
+    ) => Promise<{ error: { message: string } | null }>;
+  };
+};
+
 async function uploadDataUrl(
-  storage: { from: (bucket: string) => { upload: (path: string, body: Buffer, opts: { contentType: string; upsert?: boolean }) => Promise<{ error: { message: string } | null }> } },
+  storage: StorageLike,
   bucket: string,
   folder: string,
   dataUrl: string,
-): Promise<string | null> {
+): Promise<{ path: string | null; error: string | null }> {
   const decoded = decodeDataUrl(dataUrl);
-  if (!decoded) return null;
-  const path = `${folder}/${crypto.randomUUID()}.${decoded.ext}`;
-  const { error } = await storage.from(bucket).upload(path, decoded.buffer, {
+  if (!decoded) return { path: null, error: "Invalid image (must be JPEG, PNG or WebP)" };
+  const path = `${folder}/${Date.now()}-${crypto.randomUUID()}.${decoded.ext}`;
+  const { error } = await storage.from(bucket).upload(path, decoded.bytes, {
     contentType: decoded.contentType,
     upsert: false,
   });
   if (error) {
-    console.error("uploadDataUrl", error);
-    return null;
+    console.error(`[upload ${bucket}/${path}]`, error);
+    return { path: null, error: error.message };
   }
-  return path;
+  return { path, error: null };
 }
 
 export const submitRegistration = createServerFn({ method: "POST" })
@@ -134,12 +149,17 @@ export const submitRegistration = createServerFn({ method: "POST" })
       return { ok: false as const, error: "A member with this ID or phone number is already registered.", memberId: null };
     }
 
-    // Passport photo -> public "images" bucket (readable by everyone via RLS)
-    const photoPath = await uploadDataUrl(supabaseAdmin.storage, "images", "members/photos", data.passport_photo);
-    if (!photoPath) return { ok: false as const, error: "Could not upload passport photo.", memberId: null };
+    // Passport photo -> "images" bucket under passports/ (served via signed URLs)
+    const photoRes = await uploadDataUrl(supabaseAdmin.storage, "images", "passports", data.passport_photo);
+    if (!photoRes.path) {
+      return { ok: false as const, error: `Could not upload passport photo: ${photoRes.error ?? "unknown error"}`, memberId: null };
+    }
     // ID documents -> private "media" bucket (staff-only read)
-    const idFrontPath = data.id_front ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_front) : null;
-    const idBackPath = data.id_back ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_back) : null;
+    const idFrontRes = data.id_front ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_front) : null;
+    const idBackRes = data.id_back ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_back) : null;
+    const photoPath = photoRes.path;
+    const idFrontPath = idFrontRes?.path ?? null;
+    const idBackPath = idBackRes?.path ?? null;
 
 
     const { data: inserted, error } = await supabaseAdmin

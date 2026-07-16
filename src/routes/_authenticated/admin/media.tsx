@@ -82,9 +82,20 @@ function AdminMedia() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const { data: userData } = await supabase.auth.getUser();
+      const baseSlug = editing?.slug ?? slugify(form.title);
+      // Ensure slug uniqueness for new posts
+      let slug = baseSlug;
+      if (!editing) {
+        const { data: existing } = await supabase
+          .from("posts")
+          .select("id")
+          .eq("slug", baseSlug)
+          .maybeSingle();
+        if (existing) slug = `${baseSlug}-${Date.now()}`;
+      }
       const payload = {
         title: form.title.trim(),
-        slug: editing?.slug ?? slugify(form.title),
+        slug,
         excerpt: form.excerpt.trim() || null,
         content: form.content.trim(),
         cover_image_url: form.cover_image_url.trim() || null,
@@ -96,10 +107,14 @@ function AdminMedia() {
             ? (editing?.published_at ?? new Date().toISOString())
             : null,
       };
+      // Editing → UPDATE the existing row. Creating → INSERT a new row.
       const res = editing
         ? await supabase.from("posts").update(payload).eq("id", editing.id)
         : await supabase.from("posts").insert(payload);
-      if (res.error) throw res.error;
+      if (res.error) {
+        console.error("[savePost]", res.error);
+        throw res.error;
+      }
     },
     onSuccess: () => {
       toast.success(editing ? "Post updated." : "Post created.");

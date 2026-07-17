@@ -298,3 +298,33 @@ export const getSuccessStories = createServerFn({ method: "GET" }).handler(async
     .limit(3);
   return { stories: data ?? [] };
 });
+
+// Resolve a stored cover_image_url that may be either an absolute URL or a
+// storage path within the private "images" bucket. Signed URLs are cheap and
+// let us keep the bucket private.
+async function signCoverIfNeeded(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const path = url.replace(/^\/+/, "");
+  const { data } = await supabaseAdmin.storage.from("images").createSignedUrl(path, 60 * 60 * 24);
+  return data?.signedUrl ?? null;
+}
+
+export const getPublicPosts = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("posts")
+    .select("id, title, excerpt, content, cover_image_url, published_at, featured")
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+  if (error) {
+    console.error("getPublicPosts", error);
+    return { posts: [] as Array<{ id: string; title: string; excerpt: string | null; content: string; cover_image_url: string | null; published_at: string | null; featured: boolean }>, error: "Could not load posts" as string | null };
+  }
+  const posts = await Promise.all((data ?? []).map(async (p) => ({
+    ...p,
+    cover_image_url: await signCoverIfNeeded(p.cover_image_url),
+  })));
+  return { posts, error: null as string | null };
+});

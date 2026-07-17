@@ -162,10 +162,6 @@ function JoinPage() {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.passport_photo) {
-      toast.error("Please upload your passport photo.");
-      return;
-    }
     if (!form.agree_terms) {
       toast.error("Please agree to the terms.");
       return;
@@ -289,7 +285,7 @@ function JoinPage() {
             <legend className="text-lg font-bold text-secondary">Uploads</legend>
             <div className="grid gap-4 md:grid-cols-3">
               <UploadBox
-                label="Passport photo *"
+                label="Passport photo (optional)"
                 value={form.passport_photo}
                 inputRef={photoInputRef}
                 onChange={(e) => handleImage(e, "passport_photo")}

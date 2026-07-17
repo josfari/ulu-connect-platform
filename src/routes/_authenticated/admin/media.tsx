@@ -251,19 +251,25 @@ function AdminMedia() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const path = `posts/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-                    const up = await supabase.storage.from("images").upload(path, file, { contentType: file.type, upsert: false });
-                    if (up.error) {
-                      toast.error("Upload failed. Are you signed in as staff?");
+                    if (!file.type.startsWith("image/")) {
+                      toast.error("Please choose an image file.");
                       return;
                     }
-                    const { data: pub } = supabase.storage.from("images").getPublicUrl(path);
-                    setForm({ ...form, cover_image_url: pub.publicUrl });
+                    const ext = file.name.split(".").pop() ?? "jpg";
+                    const path = `posts/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+                    const up = await supabase.storage.from("images").upload(path, file, { contentType: file.type, upsert: false });
+                    if (up.error) {
+                      console.error("[cover upload]", up.error);
+                      toast.error(`Upload failed: ${up.error.message}`);
+                      return;
+                    }
+                    // Store the storage path; public page signs it on read.
+                    setForm({ ...form, cover_image_url: path });
                     toast.success("Cover image uploaded.");
                   }}
                 />
                 {form.cover_image_url && (
-                  <img src={form.cover_image_url} alt="cover" className="mt-2 h-24 w-full rounded-md object-cover" />
+                  <p className="mt-2 truncate text-xs text-muted-foreground">Uploaded: {form.cover_image_url}</p>
                 )}
               </div>
 

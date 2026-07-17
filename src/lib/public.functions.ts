@@ -87,8 +87,8 @@ const registrationSchema = z.object({
   membership_category: z.string().trim().min(2).max(100),
   reason_for_joining: z.string().trim().max(1000).optional().or(z.literal("")),
   agree_terms: z.literal(true),
-  // base64 data URLs (jpeg/png), capped
-  passport_photo: z.string().startsWith("data:image/").max(2_500_000),
+  // base64 data URLs (jpeg/png), capped — passport is optional
+  passport_photo: z.string().startsWith("data:image/").max(2_500_000).optional().or(z.literal("")),
   id_front: z.string().startsWith("data:image/").max(2_500_000).optional().or(z.literal("")),
   id_back: z.string().startsWith("data:image/").max(2_500_000).optional().or(z.literal("")),
 });
@@ -149,15 +149,18 @@ export const submitRegistration = createServerFn({ method: "POST" })
       return { ok: false as const, error: "A member with this ID or phone number is already registered.", memberId: null };
     }
 
-    // Passport photo -> "images" bucket under passports/ (served via signed URLs)
-    const photoRes = await uploadDataUrl(supabaseAdmin.storage, "images", "passports", data.passport_photo);
-    if (!photoRes.path) {
-      return { ok: false as const, error: `Could not upload passport photo: ${photoRes.error ?? "unknown error"}`, memberId: null };
+    // Passport photo (optional) -> "images" bucket under passports/ (served via signed URLs)
+    let photoPath: string | null = null;
+    if (data.passport_photo) {
+      const photoRes = await uploadDataUrl(supabaseAdmin.storage, "images", "passports", data.passport_photo);
+      if (!photoRes.path) {
+        return { ok: false as const, error: `Could not upload passport photo: ${photoRes.error ?? "unknown error"}`, memberId: null };
+      }
+      photoPath = photoRes.path;
     }
     // ID documents -> private "media" bucket (staff-only read)
     const idFrontRes = data.id_front ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_front) : null;
     const idBackRes = data.id_back ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_back) : null;
-    const photoPath = photoRes.path;
     const idFrontPath = idFrontRes?.path ?? null;
     const idBackPath = idBackRes?.path ?? null;
 
@@ -294,4 +297,34 @@ export const getSuccessStories = createServerFn({ method: "GET" }).handler(async
     .order("published_at", { ascending: false })
     .limit(3);
   return { stories: data ?? [] };
+});
+
+// Resolve a stored cover_image_url that may be either an absolute URL or a
+// storage path within the private "images" bucket. Signed URLs are cheap and
+// let us keep the bucket private.
+async function signCoverIfNeeded(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const path = url.replace(/^\/+/, "");
+  const { data } = await supabaseAdmin.storage.from("images").createSignedUrl(path, 60 * 60 * 24);
+  return data?.signedUrl ?? null;
+}
+
+export const getPublicPosts = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("posts")
+    .select("id, title, excerpt, content, cover_image_url, published_at, featured")
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+  if (error) {
+    console.error("getPublicPosts", error);
+    return { posts: [] as Array<{ id: string; title: string; excerpt: string | null; content: string; cover_image_url: string | null; published_at: string | null; featured: boolean }>, error: "Could not load posts" as string | null };
+  }
+  const posts = await Promise.all((data ?? []).map(async (p) => ({
+    ...p,
+    cover_image_url: await signCoverIfNeeded(p.cover_image_url),
+  })));
+  return { posts, error: null as string | null };
 });

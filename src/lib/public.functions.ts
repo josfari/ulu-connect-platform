@@ -149,21 +149,25 @@ export const submitRegistration = createServerFn({ method: "POST" })
       return { ok: false as const, error: "A member with this ID or phone number is already registered.", memberId: null };
     }
 
-    // Passport photo (optional) -> "images" bucket under passports/ (served via signed URLs)
+    // All uploads are best-effort: failures are logged but never block registration.
     let photoPath: string | null = null;
     if (data.passport_photo) {
-      const photoRes = await uploadDataUrl(supabaseAdmin.storage, "images", "passports", data.passport_photo);
-      if (!photoRes.path) {
-        return { ok: false as const, error: `Could not upload passport photo: ${photoRes.error ?? "unknown error"}`, memberId: null };
-      }
-      photoPath = photoRes.path;
+      const res = await uploadDataUrl(supabaseAdmin.storage, "images", "passports", data.passport_photo);
+      if (res.error) console.error("[passport upload failed — continuing]", res.error);
+      photoPath = res.path;
     }
-    // ID documents -> private "media" bucket (staff-only read)
-    const idFrontRes = data.id_front ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_front) : null;
-    const idBackRes = data.id_back ? await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_back) : null;
-    const idFrontPath = idFrontRes?.path ?? null;
-    const idBackPath = idBackRes?.path ?? null;
-
+    let idFrontPath: string | null = null;
+    if (data.id_front) {
+      const res = await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_front);
+      if (res.error) console.error("[id_front upload failed — continuing]", res.error);
+      idFrontPath = res.path;
+    }
+    let idBackPath: string | null = null;
+    if (data.id_back) {
+      const res = await uploadDataUrl(supabaseAdmin.storage, "media", "members/ids", data.id_back);
+      if (res.error) console.error("[id_back upload failed — continuing]", res.error);
+      idBackPath = res.path;
+    }
 
     const { data: inserted, error } = await supabaseAdmin
       .from("members")
@@ -195,8 +199,9 @@ export const submitRegistration = createServerFn({ method: "POST" })
       .single();
 
     if (error || !inserted) {
-      console.error("submitRegistration", error);
-      return { ok: false as const, error: "Could not submit your application. Please try again.", memberId: null };
+      console.error("submitRegistration insert failed:", error);
+      const msg = error?.message ?? "Unknown database error";
+      return { ok: false as const, error: `Registration failed: ${msg}`, memberId: null };
     }
     return { ok: true as const, error: null, memberId: inserted.id };
   });

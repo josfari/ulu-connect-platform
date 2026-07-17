@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Loader2, CalendarDays } from "lucide-react";
 import DOMPurify from "dompurify";
 import { SiteLayout } from "@/components/site/SiteLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { getPublicPosts } from "@/lib/public.functions";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -32,17 +33,14 @@ type Post = {
 
 function MediaPage() {
   const [openPost, setOpenPost] = useState<Post | null>(null);
+  const fetchPosts = useServerFn(getPublicPosts);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-posts"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("id, title, excerpt, content, cover_image_url, published_at, featured")
-        .eq("status", "published")
-        .order("published_at", { ascending: false });
-      if (error) throw error;
-      return data as Post[];
+      const res = await fetchPosts();
+      if (res.error) throw new Error(res.error);
+      return res.posts as Post[];
     },
   });
 
